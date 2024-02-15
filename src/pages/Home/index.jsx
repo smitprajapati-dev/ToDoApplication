@@ -13,29 +13,35 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
 
 export default class Home extends Component {
   state = {
-    todoText: '',
     todoList: [],
+    filterType: 'all',
   };
 
-  changeText = event => {
-    console.log(event.target.value);
-    this.setState({ todoText: event.target.value });
-  };
+  inputRef = createRef();
+
+  // changeText = event => {
+  //   this.setState({ todoText: event.target.value });
+  // };
 
   addToDo = event => {
     event.preventDefault();
+    const inputText = this.inputRef.current;
     console.log('hello');
-    this.setState(({ todoList, todoText }) => ({
-      todoList: [
-        ...todoList,
-        { id: new Date().valueOf(), text: todoText, isDone: false },
-      ],
-      todoText: '',
-    }));
+    this.setState(
+      ({ todoList }) => ({
+        todoList: [
+          ...todoList,
+          { id: new Date().valueOf(), text: inputText.value, isDone: false },
+        ],
+      }),
+      () => {
+        inputText.value = '';
+      },
+    );
   };
 
   toggleComplete = item => {
@@ -60,8 +66,12 @@ export default class Home extends Component {
     });
   };
 
+  changeFilterType = filterType => {
+    this.setState({ filterType });
+  };
+
   render() {
-    const { todoText, todoList } = this.state;
+    const { todoList, filterType } = this.state;
     return (
       <div className=" flex flex-col items-center h-screen">
         <h1 className="text-xl font-extrabold">To App</h1>
@@ -71,8 +81,9 @@ export default class Home extends Component {
         >
           <Input
             className="rounded-r-none"
-            value={todoText}
-            onChange={this.changeText}
+            ref={this.inputRef}
+            // value={todoText}
+            // onChange={this.changeText}
             required
           />
           <Button type="submit" className="rounded-l-none">
@@ -80,69 +91,77 @@ export default class Home extends Component {
           </Button>
         </form>
         <div className="m-4 flex flex-col gap-6 w-full p-6 flex-1">
-          {todoList.map(item => (
-            <div key={item.id} className="flex  items-center ">
-              <Checkbox
-                chcked={item.isDone}
-                onCheckedChange={() => this.toggleComplete(item)}
-              />
-              <p className="flex-1 px-4 ">{item.text}</p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button>Delete</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Are you sure you want to delete?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete
-                      your account and remove your data from our servers.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={()=>this.toDelete(item)}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              {/* <Button type="button" onClick={() => this.toDelete(item)}>
+          {todoList
+            .filter(x => {
+              switch(filterType) {
+                case 'pending':
+                  return x.isDone === false;
+
+                case 'completed':
+                  return x.isDone === true;
+
+                default:
+                  return true;
+              }
+            })
+            .map(item => (
+              <div key={item.id} className="flex  items-center ">
+                <Checkbox
+                  chcked={item.isDone}
+                  onCheckedChange={() => this.toggleComplete(item)}
+                />
+                <p className="flex-1 px-4 ">{item.text}</p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button>Delete</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you sure you want to delete?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete your account and remove your data from our
+                        servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => this.toDelete(item)}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                {/* <Button type="button" onClick={() => this.toDelete(item)}>
                 Button
               </Button> */}
-            </div>
-          ))}
-          {/* <div className="flex  items-center ">
-            <Checkbox />
-            <p className="flex-1 px-4 ">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Impedit,
-              culpa?
-            </p>
-            <Button>Button</Button>
-          </div>
-          <div className="flex  items-center c ">
-            <Checkbox />
-            <p className="flex-1 px-4 ">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Impedit,
-              culpa?
-            </p>
-            <Button>Button</Button>
-          </div>
-          <div className="flex  items-center c ">
-            <Checkbox />
-            <p className="flex-1 px-4 ">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Impedit,
-              culpa?
-            </p>
-            <Button>Button</Button>
-          </div> */}
+              </div>
+            ))}
         </div>
         <div className="w-full flex">
-          <Button className="flex-1 rounded-none" variant="destructive">
-            All{' '}
+          <Button
+            className="flex-1 rounded-none"
+            variant={filterType === 'all' ? 'destructive' : 'default'}
+            onClick={() => this.changeFilterType('all')}
+          >
+            All
           </Button>
-          <Button className="flex-1 rounded-none">Pending</Button>
-          <Button className="flex-1 rounded-none">Complete</Button>
+          <Button
+            className="flex-1 rounded-none"
+            variant={filterType === 'pending' ? 'destructive' : 'default'}
+            onClick={() => this.changeFilterType('pending')}
+          >
+            Pending
+          </Button>
+          <Button
+            className="flex-1 rounded-none"
+            variant={filterType === 'completed' ? 'destructive' : 'default'}
+            onClick={() => this.changeFilterType('completed')}
+          >
+            Completed
+          </Button>
         </div>
       </div>
     );
