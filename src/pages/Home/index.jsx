@@ -107,7 +107,7 @@ export default class Home extends Component {
             .map(item => (
               <div key={item.id} className="flex  items-center ">
                 <Checkbox
-                  chcked={item.isDone}
+                  checked={item.isDone}
                   onCheckedChange={() => this.toggleComplete(item)}
                 />
                 <p className="flex-1 px-4 ">{item.text}</p>
