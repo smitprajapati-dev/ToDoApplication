@@ -1,4 +1,7 @@
-/* eslint-disable react/state-in-constructor */
+import React, { Component, createRef } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,24 +13,27 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import React, { Component, createRef } from 'react';
+
+const perPageItem = 5;
 
 export default class Home extends Component {
+  // eslint-disable-next-line react/state-in-constructor
   state = {
     todoList: [],
     filterType: 'all',
+    editMode: 0,
+    page: 1,
   };
 
   inputRef = createRef();
 
+  editRef = createRef();
+
   async componentDidMount() {
-    this.loadToDo();
+    this.loadTodo();
   }
 
-  loadToDo = async () => {
+  loadTodo = async () => {
     try {
       const res = await fetch('http://localhost:3000/todoList');
       const json = await res.json();
@@ -35,14 +41,15 @@ export default class Home extends Component {
     } catch (error) {}
   };
 
-  addToDo = async event => {
+  addTodo = async e => {
     try {
-      event.preventDefault();
-      const inputText = this.inputRef.current;
+      e.preventDefault();
+      const input = this.inputRef.current;
+
       const res = await fetch('http://localhost:3000/todoList', {
         method: 'POST',
         body: JSON.stringify({
-          text: inputText.value,
+          text: input.value,
           isDone: false,
         }),
         headers: {
@@ -50,6 +57,7 @@ export default class Home extends Component {
           Accept: 'application/json',
         },
       });
+
       const json = await res.json();
 
       this.setState(
@@ -57,25 +65,23 @@ export default class Home extends Component {
           todoList: [...todoList, json],
         }),
         () => {
-          inputText.value = '';
+          input.value = '';
         },
       );
     } catch (error) {}
   };
 
-  toggleComplete = async item => {
+  editTodo = async item => {
     try {
       const res = await fetch(`http://localhost:3000/todoList/${item.id}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          ...item,
-          isDOne: !item.isDOne,
-        }),
+        body: JSON.stringify(item),
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
       });
+
       const json = await res.json();
 
       this.setState(({ todoList }) => {
@@ -86,12 +92,13 @@ export default class Home extends Component {
             json,
             ...todoList.slice(index + 1),
           ],
+          editMode: 0,
         };
       });
     } catch (error) {}
   };
 
-  toDelete = async item => {
+  deleteTodo = async item => {
     try {
       await fetch(`http://localhost:3000/todoList/${item.id}`, {
         method: 'DELETE',
@@ -111,71 +118,119 @@ export default class Home extends Component {
   };
 
   render() {
-    const { todoList, filterType } = this.state;
+    const { todoList, filterType, editMode, page } = this.state;
+
     return (
-      <div className=" flex flex-col items-center h-screen">
-        <h1 className="text-xl font-extrabold">To App</h1>
+      <div className="flex flex-col items-center gap-4 h-screen">
+        <h1>Todo App</h1>
         <form
-          onSubmit={this.addToDo}
+          onSubmit={this.addTodo}
           className="flex w-full max-w-sm items-center"
         >
-          <Input className="rounded-r-none" ref={this.inputRef} required />
+          <Input ref={this.inputRef} className="rounded-r-none" required />
           <Button type="submit" className="rounded-l-none">
             Button
           </Button>
         </form>
-        <div className="m-4 flex flex-col gap-6 w-full p-6 flex-1">
+        <div className="flex flex-col gap-6 w-full p-6 flex-1">
           {todoList
-            .filter(x => {
-              switch (filterType) {
-                case 'pending':
-                  return x.isDone === false;
+            .slice((page - 1) * perPageItem, page * perPageItem)
+            .map(x => {
+              if (
+                filterType === 'all' ||
+                (filterType === 'pending' && x.isDone === false) ||
+                (filterType === 'completed' && x.isDone === true)
+              ) {
+                return (
+                  <div key={x.id} className="flex items-center">
+                    <Checkbox
+                      checked={x.isDone}
+                      onCheckedChange={() =>
+                        this.editTodo({ ...x, isDone: !x.isDone })
+                      }
+                    />
+                    {editMode === x.id ? (
+                      <form
+                        className="flex-1 mx-4 flex gap-4"
+                        onSubmit={() =>
+                          this.editTodo({
+                            ...x,
+                            text: this.editRef.current.value,
+                          })
+                        }
+                      >
+                        <Input className="flex-1" ref={this.editRef} />
+                        <Button
+                          type="submit"
+                          className="mx-4"
+                          onClick={() => this.setState({ editMode: x.id })}
+                        >
+                          Submit
+                        </Button>
+                      </form>
+                    ) : (
+                      <p
+                        className={`flex-1 px-4${x.isDone ? ' line-through' : ''}`}
+                      >
+                        {x.text}
+                      </p>
+                    )}
 
-                case 'completed':
-                  return x.isDone === true;
-
-                default:
-                  return true;
+                    <Button
+                      type="button"
+                      className="mx-4"
+                      onClick={() =>
+                        this.setState({ editMode: x.id }, () => {
+                          this.editRef.current.value = x.text;
+                        })
+                      }
+                    >
+                      Edit
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button>Delete</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you sure you want to delete?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete your account and remove your data from our
+                            servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => this.toDelete(x)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                );
               }
-            })
-            .map(item => (
-              <div key={item.id} className="flex  items-center ">
-                <Checkbox
-                  checked={item.isDone}
-                  onCheckedChange={() => this.toggleComplete(item)}
-                />
-                <p
-                  className={`flex-1 px-4 ${item.isDone ? 'line-through' : ''}`}
-                >
-                  {item.text}
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button>Delete</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Are you sure you want to delete?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete your account and remove your data from our
-                        servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => this.toDelete(item)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            ))}
+              return null;
+            })}
+          <Button
+            onClick={() => this.setState(({ page }) => ({ page: page + 1 }))}
+            disabled={page >= Math.ceil(todoList.length / perPageItem)}
+          >
+            Next
+          </Button>
+          <Button
+            onClick={() => this.setState(({ page }) => ({ page: page - 1 }))}
+            disabled={page <= 1}
+          >
+            Previous
+          </Button>
         </div>
-        <div className="w-full flex">
+        <div className="flex w-full">
           <Button
             className="flex-1 rounded-none"
             variant={filterType === 'all' ? 'destructive' : 'default'}
