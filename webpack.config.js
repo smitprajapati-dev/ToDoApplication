@@ -1,5 +1,5 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: './src/index.jsx',
@@ -20,11 +20,6 @@ module.exports = {
         exclude: /node_modules/,
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
-      {
-        test: /\.svg$/,
-        exclude: /node_modules/,
-        use: ['@svgr/webpack'],
-      },
     ],
   },
   plugins: [
@@ -38,7 +33,7 @@ module.exports = {
   },
   devServer: {
     open: true,
-    port: 9000,
+    port: 4000,
     historyApiFallback: true,
   },
 };

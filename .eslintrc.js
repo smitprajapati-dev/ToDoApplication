@@ -26,10 +26,13 @@ module.exports = {
       },
     },
   ],
-
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  rules: {},
+  plugins: ['html'],
+  rules: {
+    'import/no-extraneous-dependencies': 0,
+    'react/state-in-constructor': 0,
+  },
 };
