@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import React, { Component, createRef } from 'react';
+import React, { Component, createRef, useState } from 'react';
 
 export default class Home extends Component {
   state = {
@@ -23,14 +23,9 @@ export default class Home extends Component {
 
   inputRef = createRef();
 
-  // changeText = event => {
-  //   this.setState({ todoText: event.target.value });
-  // };
-
   addToDo = event => {
     event.preventDefault();
     const inputText = this.inputRef.current;
-    console.log('hello');
     this.setState(
       ({ todoList }) => ({
         todoList: [
@@ -45,7 +40,7 @@ export default class Home extends Component {
   };
 
   toggleComplete = item => {
-    this.setState(({ todoList }, props) => {
+    this.setState(({ todoList }) => {
       const index = todoList.findIndex(x => x.id === item.id);
       return {
         todoList: [
@@ -58,7 +53,7 @@ export default class Home extends Component {
   };
 
   toDelete = item => {
-    this.setState(({ todoList }, props) => {
+    this.setState(({ todoList }) => {
       const index = todoList.findIndex(x => x.id === item.id);
       return {
         todoList: [...todoList.slice(0, index), ...todoList.slice(index + 1)],
@@ -71,19 +66,29 @@ export default class Home extends Component {
   };
 
   render() {
+    const [myStyle, setMyStyle] = useState({
+      color: 'white',
+      backgroundcolor: 'black',
+    });
+    toogleChange = ()=>{
+      if(myStyle.color == 'white'){
+        setMyStyle({
+          color:'black',
+          backgroundcolor:''
+        })
+      }
+    }
     const { todoList, filterType } = this.state;
     return (
-      <div className=" flex flex-col items-center h-screen">
+      <div className=" flex flex-col items-center h-screen bg-green-200" >
         <h1 className="text-xl font-extrabold">To App</h1>
         <form
           onSubmit={this.addToDo}
           className="flex w-full max-w-sm items-center"
         >
           <Input
-            className="rounded-r-none"
+            className="rounded-r-none border-black"
             ref={this.inputRef}
-            // value={todoText}
-            // onChange={this.changeText}
             required
           />
           <Button type="submit" className="rounded-l-none">
@@ -93,7 +98,7 @@ export default class Home extends Component {
         <div className="m-4 flex flex-col gap-6 w-full p-6 flex-1">
           {todoList
             .filter(x => {
-              switch(filterType) {
+              switch (filterType) {
                 case 'pending':
                   return x.isDone === false;
 
@@ -162,6 +167,9 @@ export default class Home extends Component {
           >
             Completed
           </Button>
+        </div>
+        <div>
+          <Button onClick={toogleChange}>On or Off</Button>
         </div>
       </div>
     );
