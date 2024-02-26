@@ -1,4 +1,7 @@
-/* eslint-disable react/state-in-constructor */
+import React, { Component, createRef } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,19 +16,27 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import React, { Component, createRef, useState } from 'react';
+import React, { Component, createRef } from 'react';
 
 export default class Home extends Component {
+  // eslint-disable-next-line react/state-in-constructor
   state = {
     todoList: [],
     filterType: 'all',
+    editMode: 0,
+    page: 1,
   };
 
   inputRef = createRef();
 
+  // changeText = event => {
+  //   this.setState({ todoText: event.target.value });
+  // };
+
   addToDo = event => {
     event.preventDefault();
     const inputText = this.inputRef.current;
+    console.log('hello');
     this.setState(
       ({ todoList }) => ({
         todoList: [
@@ -40,7 +51,7 @@ export default class Home extends Component {
   };
 
   toggleComplete = item => {
-    this.setState(({ todoList }) => {
+    this.setState(({ todoList }, props) => {
       const index = todoList.findIndex(x => x.id === item.id);
       return {
         todoList: [
@@ -53,7 +64,7 @@ export default class Home extends Component {
   };
 
   toDelete = item => {
-    this.setState(({ todoList }) => {
+    this.setState(({ todoList }, props) => {
       const index = todoList.findIndex(x => x.id === item.id);
       return {
         todoList: [...todoList.slice(0, index), ...todoList.slice(index + 1)],
@@ -66,39 +77,29 @@ export default class Home extends Component {
   };
 
   render() {
-    const [myStyle, setMyStyle] = useState({
-      color: 'white',
-      backgroundcolor: 'black',
-    });
-    toogleChange = ()=>{
-      if(myStyle.color == 'white'){
-        setMyStyle({
-          color:'black',
-          backgroundcolor:''
-        })
-      }
-    }
     const { todoList, filterType } = this.state;
     return (
-      <div className=" flex flex-col items-center h-screen bg-green-200" >
+      <div className=" flex flex-col items-center h-screen">
         <h1 className="text-xl font-extrabold">To App</h1>
         <form
-          onSubmit={this.addToDo}
+          onSubmit={this.addTodo}
           className="flex w-full max-w-sm items-center"
         >
           <Input
-            className="rounded-r-none border-black"
+            className="rounded-r-none"
             ref={this.inputRef}
+            // value={todoText}
+            // onChange={this.changeText}
             required
           />
           <Button type="submit" className="rounded-l-none">
             Button
           </Button>
         </form>
-        <div className="m-4 flex flex-col gap-6 w-full p-6 flex-1">
+        <div className="flex flex-col gap-6 w-full p-6 flex-1">
           {todoList
             .filter(x => {
-              switch (filterType) {
+              switch(filterType) {
                 case 'pending':
                   return x.isDone === false;
 
@@ -145,7 +146,7 @@ export default class Home extends Component {
               </div>
             ))}
         </div>
-        <div className="w-full flex">
+        <div className="flex w-full">
           <Button
             className="flex-1 rounded-none"
             variant={filterType === 'all' ? 'destructive' : 'default'}
