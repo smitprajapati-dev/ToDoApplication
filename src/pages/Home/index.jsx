@@ -124,7 +124,7 @@ export default class Home extends Component {
 
     return (
       <div className="flex flex-col items-center gap-4 h-screen">
-        <h1>Todo App</h1>
+        <h1 className="font-bold text-2xl">Todo Task's Application</h1>
         <form
           onSubmit={() => {
             this.addTodo;
@@ -195,15 +195,22 @@ export default class Home extends Component {
             ),
             // return null;
           )}
-          <Button
-            onClick={() => this.loadTodo(page + 1, filterType)}
-            disabled={page >= totalPages}
-          >
-            Next
-          </Button>
-          <Button onClick={() => this.loadTodo(page - 1)} disabled={page <= 1}>
-            Previous
-          </Button>
+          <div className="flex">
+            <Button
+              onClick={() => this.loadTodo(page - 1)}
+              disabled={page <= 1}
+              className="w-1/2 "
+            >
+              Previous
+            </Button>
+            <Button
+              onClick={() => this.loadTodo(page + 1, filterType)}
+              disabled={page >= totalPages}
+              className="w-1/2"
+            >
+              Next
+            </Button>
+          </div>
         </div>
         <div className="flex w-full">
           <Button
@@ -228,16 +235,6 @@ export default class Home extends Component {
             Completed
           </Button>
         </div>
-        {/* <TodoList
-          todoList={todoList}
-          filterType={filterType}
-          deleteTodo={this.deleteTodo}
-          toggleComplete={this.toggleComplete}
-        />
-        <TodoFilter
-          filterType={filterType}
-          changeFilterType={this.changeFilterType}
-        /> */}
       </div>
     );
   }
