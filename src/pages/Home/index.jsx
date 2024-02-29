@@ -1,9 +1,9 @@
 import React, { Component, createRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { v4 as uuidv4 } from 'uuid';
 import { Checkbox } from '@/components/ui/checkbox';
 import ConfirmDelete from '@/components/confirmDelete';
+import { Toaster } from '@/components/ui/toaster';
 
 const perPageItem = 5;
 
@@ -14,6 +14,8 @@ export default class Home extends Component {
     editMode: 0,
     page: 1,
     totalPages: 0,
+    error: null,
+    apiStatus: [],
   };
 
   inputRef = createRef();
@@ -25,20 +27,41 @@ export default class Home extends Component {
   }
 
   loadTodo = async (currentPage, filterType = 'all') => {
+    const action = 'LOAD_TODO';
+
     try {
+      this.setState(({ ...apiStatus }) => ({
+        apiStatus: [
+          ...apiStatus,
+          {
+            action,
+            status: 'loading',
+          },
+        ],
+      }));
       let url = `http://localhost:3000/todoList?_page=${currentPage}&_per_page=${perPageItem}`;
-      if (filterType != 'all') {
+
+      if (filterType !== 'all') {
         url += `&isDone=${filterType === 'completed' ? 1 : 0}`;
       }
+
       const res = await fetch(url);
       const json = await res.json();
-      this.setState({
+      this.setState({});
+      this.setState(({ apiStatus }) => ({
         todoList: json.data,
         totalPages: json.pages,
         page: currentPage,
         filterType,
-      });
-    } catch (error) {}
+        apiStatus: apiStatus.findIndex(x => x.action === action),
+      }));
+    } catch (error) {
+      this.setState(({ apiStatus }) => ({
+        apiStatus: apiStatus.map(x =>
+          x.action === action ? { ...x, status: 'error' } : x,
+        ),
+      }));
+    }
   };
 
   addTodo = async e => {
@@ -69,7 +92,7 @@ export default class Home extends Component {
         },
       );
     } catch (error) {
-      console.error(error);
+      console.log(error)
     }
   };
 
@@ -98,7 +121,7 @@ export default class Home extends Component {
         };
       });
     } catch (error) {
-      console.error(error);
+      this.setState({ error: error.message });
     }
   };
 
@@ -115,20 +138,25 @@ export default class Home extends Component {
         };
       });
     } catch (error) {
-      console.error(error);
+      this.setState({ error: error.message });
     }
   };
 
   render() {
-    const { todoList, filterType, editMode, page, totalPages } = this.state;
-
+    const { todoList, filterType, editMode, page, totalPages, apiStatus } =
+      this.state;
+    const loadToDoAction = apiStatus.find(x => x.action === 'LOAD_TODO');
+    if (loadToDoAction?.status === 'loading') {
+      return <p>Loading...</p>;
+    }
+    if (loadToDoAction?.status === 'error') {
+      return <p>{loadToDoAction.message}</p>;
+    }
     return (
       <div className="flex flex-col items-center gap-4 h-screen">
-        <h1 className="font-bold text-2xl">Todo Task's Application</h1>
+        <h1>Todo App</h1>
         <form
-          onSubmit={() => {
-            this.addTodo;
-          }}
+          onSubmit={this.addTodo}
           className="flex w-full max-w-sm items-center"
         >
           <Input ref={this.inputRef} className="rounded-r-none" required />
@@ -137,80 +165,67 @@ export default class Home extends Component {
           </Button>
         </form>
         <div className="flex flex-col gap-6 w-full p-6 flex-1">
-          {todoList.map(
-            x => (
-              // if (
-              //   filterType === 'all' ||
-              //   (filterType === 'pending' && x.isDone === false) ||
-              //   (filterType === 'completed' && x.isDone === true)
-              // ) {
-              <div key={x.id} className="flex items-center">
-                <Checkbox
-                  checked={x.isDone}
-                  onCheckedChange={() =>
-                    this.editTodo({ ...x, isDone: !x.isDone })
-                  }
-                />
-                {editMode === x.id ? (
-                  <form
-                    className="flex-1 mx-4 flex gap-4"
-                    onSubmit={a => {
-                      a.preventDefault();
-                      this.editTodo({
-                        ...x,
-                        text: this.editRef.current.value,
-                      });
-                    }}
-                  >
-                    <Input className="flex-1" ref={this.editRef} />
-                    <Button
-                      type="submit"
-                      className="mx-4"
-                      onClick={() => this.setState({ editMode: x.id })}
-                    >
-                      Submit
-                    </Button>
-                  </form>
-                ) : (
-                  <p
-                    className={`flex-1 px-4${x.isDone ? ' line-through' : ''}`}
-                  >
-                    {x.text}
-                  </p>
-                )}
-
-                <Button
-                  type="button"
-                  className="mx-4"
-                  onClick={() =>
-                    this.setState({ editMode: x.id }, () => {
-                      this.editRef.current.value = x.text;
-                    })
-                  }
+          {todoList.map(x => (
+            <div key={x.id} className="flex items-center">
+              <Checkbox
+                checked={x.isDone}
+                onCheckedChange={() =>
+                  this.editTodo({ ...x, isDone: !x.isDone })
+                }
+              />
+              {editMode === x.id ? (
+                <form
+                  className="flex-1 mx-4 flex gap-4"
+                  onSubmit={e => {
+                    e.preventDefault();
+                    this.editTodo({
+                      ...x,
+                      text: this.editRef.current.value,
+                    });
+                  }}
                 >
-                  Edit
-                </Button>
-                <ConfirmDelete onClick={() => this.deleteTodo(x)} />
-              </div>
-            ),
-            // return null;
-          )}
-          <div className="flex">
-            <Button
-              onClick={() => this.loadTodo(page - 1)}
-              disabled={page <= 1}
-              className="w-1/2 "
-            >
-              Previous
-            </Button>
-            <Button
-              onClick={() => this.loadTodo(page + 1, filterType)}
-              disabled={page >= totalPages}
-              className="w-1/2"
-            >
-              Next
-            </Button>
-          </div>
+                  <Input className="flex-1" ref={this.editRef} />
+                  <Button
+                    type="submit"
+                    className="mx-4"
+                    onClick={() => this.setState({ editMode: x.id })}
+                  >
+                    Submit
+                  </Button>
+                </form>
+              ) : (
+                <p className={`flex-1 px-4${x.isDone ? ' line-through' : ''}`}>
+                  {x.text}
+                </p>
+              )}
+
+              <Button
+                type="button"
+                className="mx-4"
+                onClick={() =>
+                  this.setState({ editMode: x.id }, () => {
+                    this.editRef.current.value = x.text;
+                  })
+                }
+              >
+                Edit
+              </Button>
+              <ConfirmDelete onClick={() => this.deleteTodo(x)} />
+            </div>
+          ))}
+          <Button
+            disabled={page >= totalPages}
+            onClick={() => this.loadTodo(page + 1, filterType)}
+          >
+            Next
+          </Button>
+          <Button
+            onClick={() => this.loadTodo(page - 1, filterType)}
+            disabled={page <= 1}
+          >
+            Previous
+          </Button>
+          <Toaster />
         </div>
         <div className="flex w-full">
           <Button
@@ -235,6 +250,11 @@ export default class Home extends Component {
             Completed
           </Button>
         </div>
+        {/* {error && (
+          <div className="absolute top-4 right-4 p-4 bg-red-400 rounded-md">
+            {error}
+          </div>
+        )} */}
       </div>
     );
   }
